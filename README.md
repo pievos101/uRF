@@ -31,3 +31,6 @@ res$affinity
 res$clusters
 ```
 
+## Acknowledgement 
+The uRF package is based on the ranger package (https://github.com/imbs-hl/ranger).
+
