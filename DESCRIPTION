@@ -1,0 +1,16 @@
+Package: uRF
+Type: Package
+Title: Clustering with Unsupervised Random Forest
+Version: 0.0.1
+Date: 2024-01-19
+Author: Bastian Pfeifer [aut] and Marvin N. Wright [aut, cre]
+Maintainer: Bastian Pfeifer <bastian.pfeifer@medunigraz.at>
+Description: Unsupervised random forest for clustering
+License: GPL-3
+Imports: Rcpp (>= 0.11.2), Matrix, NbClust
+LinkingTo: Rcpp, RcppEigen
+Depends: R (>= 3.1)
+Suggests: 
+    survival,
+    testthat
+Encoding: UTF-8
