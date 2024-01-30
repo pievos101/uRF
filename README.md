@@ -29,6 +29,12 @@ res = uRF::uRF(list(d), k=3)
 
 res$affinity
 res$clusters
+
+# Performance of the clustering
+library(aricode)
+ARI(res$clusters, iris[,5])
+NMI(res$clusters, iris[,5])
+
 ```
 
 
