@@ -68,7 +68,7 @@ if(is.na(k)){
 
 #print(bestCl)
 set.seed(Sys.time())
-return(list(clusters=cl, affinity=SIMILARITY))
+return(list(clusters=cl, affinity=SIMILARITY, model=model))
 }
 
 

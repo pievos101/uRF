@@ -48,6 +48,48 @@ fimp
 
 ```
 
+### Federated Computation
+```{r}
+
+library(uRF)
+data(iris)
+d = iris[,1:4]
+
+# Distribute data over three clients
+n.clients = 3
+samp = as.numeric(rownames(d))
+df = sample(samp, length(samp))
+spl = split(df, rep(1:n.clients, length.out = length(df), each = ceiling(length(df)/3)))
+
+d1 = d[spl[[1]],]
+d2 = d[spl[[2]],]
+d3 = d[spl[[3]],]
+
+res_1 = uRF::uRF(list(d1), k=3)
+res_2 = uRF::uRF(list(d2), k=3)
+res_3 = uRF::uRF(list(d3), k=3)
+
+res_1_global = uRF::feduRF(list(d1), 
+        models=list(res_1$model,res_2$model,res_3$model), k=3)
+res_2_global = uRF::feduRF(list(d2), 
+        models=list(res_1$model,res_2$model,res_3$model), k=3)
+res_3_global = uRF::feduRF(list(d3), 
+        models=list(res_1$model,res_2$model,res_3$model), k=3)
+
+
+library(aricode)
+print("Local performance (non-federated model)")
+ARI(res_1$clusters, iris[spl[[1]],5])
+ARI(res_2$clusters, iris[spl[[2]],5])
+ARI(res_3$clusters, iris[spl[[3]],5])
+
+print("Local performance (federated model)")
+ARI(res_1_global$clusters, iris[spl[[1]],5])
+ARI(res_2_global$clusters, iris[spl[[2]],5])
+ARI(res_3_global$clusters, iris[spl[[3]],5])
+
+```
+
 
 ## Citation
 If you find the uRF package useful please cite
