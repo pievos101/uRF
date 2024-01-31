@@ -35,6 +35,11 @@ library(aricode)
 ARI(res$clusters, iris[,5])
 NMI(res$clusters, iris[,5])
 
+# Now, that we have the clusters computed, 
+# feature importance per cluster and feature can be determined
+fimp = uRF::fimp(d, clusters=res$clusters)
+fimp
+
 ```
 
 
