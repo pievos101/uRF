@@ -17,6 +17,8 @@ library(uRF)
 
 ## Usage
 
+### Clustering
+
 ```{r}
 library(uRF)
 
@@ -34,7 +36,11 @@ res$clusters
 library(aricode)
 ARI(res$clusters, iris[,5])
 NMI(res$clusters, iris[,5])
+```
 
+### Feature Importance per Cluster
+
+```{r}
 # Now, that we have the clusters computed, 
 # feature importance per cluster and feature can be determined
 fimp = uRF::fimp(d, clusters=res$clusters)
