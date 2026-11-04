@@ -1,4 +1,4 @@
-library(ranger)
+library(uRF)
 context("ranger_betasplit")
 
 # Generate data with 0..1 outcome

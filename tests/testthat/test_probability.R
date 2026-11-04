@@ -1,6 +1,6 @@
 ## Tests for random forests for probability estimation
 
-library(ranger)
+library(uRF)
 context("ranger_prob")
 
 ## Initialize random forest

@@ -64,7 +64,12 @@ void ForestClassification::initInternal() {
   }
 
   // Create class_values and response_classIDs
-  if (!prediction_mode) {
+  if (!prediction_mode && clustering) {
+    // Clustering has no response. Keep one bookkeeping class for terminal
+    // values; split selection must not depend on fabricated response values.
+    class_values = {0};
+    response_classIDs.assign(num_samples, 0);
+  } else if (!prediction_mode) {
     for (size_t i = 0; i < num_samples; ++i) {
       double value = data->get_y(i, 0);
 
@@ -97,7 +102,7 @@ void ForestClassification::initInternal() {
   class_weights = std::vector<double>(class_values.size(), 1.0);
 
   // Sort data if memory saving mode
-  if (!memory_saving_splitting) {
+  if (clustering || !memory_saving_splitting) {
     data->sort();
   }
 }
@@ -106,7 +111,7 @@ void ForestClassification::growInternal() {
   trees.reserve(num_trees);
   for (size_t i = 0; i < num_trees; ++i) {
     trees.push_back(
-        std::make_unique<TreeClassification>(&class_values, &response_classIDs, &sampleIDs_per_class, &class_weights));
+        std::make_unique<TreeClassification>(&class_values, &response_classIDs, &sampleIDs_per_class, &class_weights, clustering));
   }
 }
 

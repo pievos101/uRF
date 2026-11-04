@@ -22,7 +22,8 @@
 namespace ranger {
 
 TreeClassification::TreeClassification(std::vector<double>* class_values, std::vector<uint>* response_classIDs,
-    std::vector<std::vector<size_t>>* sampleIDs_per_class, std::vector<double>* class_weights) :
+    std::vector<std::vector<size_t>>* sampleIDs_per_class, std::vector<double>* class_weights, bool clustering) :
+    clustering(clustering),
     class_values(class_values), response_classIDs(response_classIDs), sampleIDs_per_class(sampleIDs_per_class), class_weights(
         class_weights), counter(0), counter_per_class(0) {
 }
@@ -36,7 +37,7 @@ TreeClassification::TreeClassification(std::vector<std::vector<size_t>>& child_n
 
 void TreeClassification::allocateMemory() {
   // Init counters if not in memory efficient mode
-  if (!memory_saving_splitting) {
+  if (clustering || !memory_saving_splitting) {
     size_t num_classes = class_values->size();
     size_t max_num_splits = data->getMaxNumUniqueValues();
 
@@ -84,9 +85,9 @@ bool TreeClassification::splitNodeInternal(size_t nodeID, std::vector<size_t>& p
   }
 
   // Check if node is pure and set split_value to estimate and stop if pure
-  bool pure = true;
+  bool pure = !clustering;
   double pure_value = 0;
-  for (size_t pos = start_pos[nodeID]; pos < end_pos[nodeID]; ++pos) {
+  for (size_t pos = start_pos[nodeID]; !clustering && pos < end_pos[nodeID]; ++pos) {
     size_t sampleID = sampleIDs[pos];
     double value = data->get_y(sampleID, 0);
     if (pos != start_pos[nodeID] && value != pure_value) {
@@ -102,7 +103,7 @@ bool TreeClassification::splitNodeInternal(size_t nodeID, std::vector<size_t>& p
 
   // Find best split, stop if no decrease of impurity
   bool stop;
-  if (splitrule == EXTRATREES) {
+  if (!clustering && splitrule == EXTRATREES) {
     stop = findBestSplitExtraTrees(nodeID, possible_split_varIDs);
   } else {
     stop = findBestSplit(nodeID, possible_split_varIDs);
@@ -169,7 +170,7 @@ bool TreeClassification::findBestSplit(size_t nodeID, std::vector<size_t>& possi
       if (data->isOrderedVariable(varID)) {
         //printf("1");       
         // Use memory saving method if option set
-        if (memory_saving_splitting) {
+        if (!clustering && memory_saving_splitting) {
           findBestSplitValueSmallQ(nodeID, varID, num_classes, class_counts, num_samples_node, best_value, best_varID,
               best_decrease);
         //printf("2");
@@ -194,13 +195,10 @@ bool TreeClassification::findBestSplit(size_t nodeID, std::vector<size_t>& possi
 
         //printf("5"); //does not enter this
             
-        if(1){//if (splitrule == HELLINGER) {
-          findBestSplitValueLargeQSilhouette(nodeID, varID, num_classes, class_counts, num_samples_node, best_value, best_varID,
-            best_decrease, best_decrease2);
-        }else{
-          findBestSplitValueUnordered(nodeID, varID, num_classes, class_counts, num_samples_node, best_value, best_varID,
+        // Unordered variables have no sorted-value index for the silhouette
+        // routine. Use the categorical partition search instead.
+        findBestSplitValueUnordered(nodeID, varID, num_classes, class_counts, num_samples_node, best_value, best_varID,
             best_decrease);
-        }
       }
     }
   }
@@ -219,7 +217,7 @@ bool TreeClassification::findBestSplit(size_t nodeID, std::vector<size_t>& possi
     
     //printf("Num classes: %d", (int)num_classes);
     
-    if(num_classes==41){ // why 41? when no target is given
+    if(clustering){
       //printf(">1");
       addGiniImportance(nodeID, best_varID, best_decrease);
     }else{
@@ -563,15 +561,11 @@ void TreeClassification::findBestSplitValueLargeQSilhouette(size_t nodeID, size_
     for (int xx = 0; xx<num_samples_node; xx++){
       // find the split
       if(values[xx]<=candidate_value){
-        if(values[xx]!=0){
-          leftValues = leftValues + values[xx];
-          leftCounter++;
-        } 
+        leftValues = leftValues + values[xx];
+        leftCounter++;
       }else{
-        if(values[xx]!=0){
-          rightValues = rightValues + values[xx];
-          rightCounter++;
-        }
+        rightValues = rightValues + values[xx];
+        rightCounter++;
       }
     }
 
@@ -608,15 +602,11 @@ void TreeClassification::findBestSplitValueLargeQSilhouette(size_t nodeID, size_
     for (int xx = 0; xx<num_samples_node; xx++){
       // find the split
       if(values[xx]<=candidate_value){
-        if(values[xx]!=0){
-          leftValuesVector[leftCounter] =  values[xx];
-          leftCounter++;
-        } 
+        leftValuesVector[leftCounter] = values[xx];
+        leftCounter++;
       }else{
-        if(values[xx]!=0){
-          rightValuesVector[rightCounter] = values[xx];
-          rightCounter++;
-        }
+        rightValuesVector[rightCounter] = values[xx];
+        rightCounter++;
       }
     }
 
@@ -631,7 +621,7 @@ void TreeClassification::findBestSplitValueLargeQSilhouette(size_t nodeID, size_
         comp1++;
       }
     }
-    diversity1 = diversity1/comp1;
+    diversity1 = comp1 > 0 ? diversity1/comp1 : 0;
 
     // diversity #2
     double diversity2 = 0;
@@ -644,7 +634,7 @@ void TreeClassification::findBestSplitValueLargeQSilhouette(size_t nodeID, size_
         comp2++;
       }
     }
-    diversity2 = diversity2/comp2;
+    diversity2 = comp2 > 0 ? diversity2/comp2 : 0;
 
     double diversity = 0;
     diversity = (diversity1+diversity2)/2;
@@ -1159,7 +1149,7 @@ void TreeClassification::findBestSplitValueExtraTreesUnordered(size_t nodeID, si
 void TreeClassification::addGiniImportance(size_t nodeID, size_t varID, double decrease) {
 
   double best_decrease = decrease;
-  if (splitrule != HELLINGER) {
+  if (!clustering && splitrule != HELLINGER) {
     size_t num_samples_node = end_pos[nodeID] - start_pos[nodeID];
     std::vector<size_t> class_counts;
     class_counts.resize(class_values->size(), 0);

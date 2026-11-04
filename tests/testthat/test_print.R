@@ -1,6 +1,6 @@
 ## Tests for print function
 
-library(ranger)
+library(uRF)
 context("ranger_print")
 
 ## Initialize the random forest

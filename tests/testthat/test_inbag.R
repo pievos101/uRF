@@ -1,6 +1,6 @@
 ## Tests for inbag functions
 
-library(ranger)
+library(uRF)
 context("ranger_inbag")
 
 ## Tests

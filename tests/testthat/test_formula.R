@@ -1,4 +1,4 @@
-library(ranger)
+library(uRF)
 library(survival)
 
 test_that("LHS formula", {

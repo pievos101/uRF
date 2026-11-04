@@ -142,7 +142,7 @@ Rcpp::List rangerCpp(uint treetype, Rcpp::NumericMatrix& input_x, Rcpp::NumericM
       break;
     case TREE_CLUSTERING:
         //printf("START: Make unique");
-        forest = std::make_unique<ForestClassification>();
+        forest = std::make_unique<ForestClassification>(true);
         //printf("END: Make unique");
       break;
     case TREE_REGRESSION:

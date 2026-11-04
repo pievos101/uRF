@@ -1,6 +1,6 @@
 ## Tests for character data
 
-library(ranger)
+library(uRF)
 context("ranger_char")
 
 ## Initialize random forests

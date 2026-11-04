@@ -1,6 +1,6 @@
 ## Tests for importance measures
 
-library(ranger)
+library(uRF)
 context("ranger_imp")
 set.seed(123)
 
