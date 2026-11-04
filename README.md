@@ -38,6 +38,41 @@ ARI(res$clusters, iris[,5])
 NMI(res$clusters, iris[,5])
 ```
 
+### Assigning new subjects to existing clusters
+
+Continuing the iris example above, use `d` and `res$clusters` to label the saved
+forest's terminal nodes. Keep the predictor rows in the same order as the cluster
+labels. Then use ordinary `predict()` to assign a new iris subject to one of
+those clusters:
+
+```r
+assignment_model = uRF::assign_clusters(res$model, d, res$clusters)
+
+# Measurements for a new iris subject; use the same predictor column names
+new_subject = data.frame(
+  Sepal.Length = 5.1,
+  Sepal.Width = 3.4,
+  Petal.Length = 1.5,
+  Petal.Width = 0.2
+)
+
+pred = predict(assignment_model, new_subject, seed = 42)
+pred$predictions  # Predicted cluster label (1, 2 or 3), not an iris species
+```
+
+This returns a copy of the forest with each terminal node labeled by its majority
+cluster. Standard ranger prediction votes across trees; no trees are retrained
+and no clustering is rerun. The original `res$model` is preserved. Assignments
+approximate the original clustering, so check agreement on reference subjects:
+
+```r
+mean(predict(assignment_model, d, seed = 42)$predictions == res$clusters)
+```
+
+Every terminal node must contain at least one reference subject. For multiple
+views, `res$model` currently contains only the last view's forest; pass that
+view's predictor data. The assignment model then predicts from that view alone.
+
 ### Feature Importance per Cluster
 
 ```{r}
