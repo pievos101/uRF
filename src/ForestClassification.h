@@ -24,7 +24,7 @@ namespace ranger {
 
 class ForestClassification: public Forest {
 public:
-  ForestClassification() = default;
+  explicit ForestClassification(bool clustering = false) : clustering(clustering) {}
 
   ForestClassification(const ForestClassification&) = delete;
   ForestClassification& operator=(const ForestClassification&) = delete;
@@ -67,6 +67,7 @@ protected:
   std::map<std::pair<double, double>, size_t> classification_table;
 
 private:
+  bool clustering;
   double getTreePrediction(size_t tree_idx, size_t sample_idx) const;
   size_t getTreePredictionTerminalNodeID(size_t tree_idx, size_t sample_idx) const;
 };

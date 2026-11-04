@@ -1,6 +1,6 @@
 ## Tests for random forests for survival analysis
 
-library(ranger)
+library(uRF)
 library(survival)
 context("ranger_surv")
 

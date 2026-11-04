@@ -1,4 +1,4 @@
 library(testthat)
-library(ranger)
+library(uRF)
 
-test_check("ranger")
+test_check("uRF")

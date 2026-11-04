@@ -22,7 +22,7 @@ namespace ranger {
 class TreeClassification: public Tree {
 public:
   TreeClassification(std::vector<double>* class_values, std::vector<uint>* response_classIDs,
-      std::vector<std::vector<size_t>>* sampleIDs_per_class, std::vector<double>* class_weights);
+      std::vector<std::vector<size_t>>* sampleIDs_per_class, std::vector<double>* class_weights, bool clustering = false);
 
   // Create from loaded forest
   TreeClassification(std::vector<std::vector<size_t>>& child_nodeIDs, std::vector<size_t>& split_varIDs,
@@ -49,6 +49,7 @@ public:
   }
 
 private:
+  bool clustering = false;
   bool splitNodeInternal(size_t nodeID, std::vector<size_t>& possible_split_varIDs) override;
   void createEmptyNodeInternal() override;
 

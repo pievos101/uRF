@@ -1,6 +1,6 @@
 ## Tests for predictions
 
-library(ranger)
+library(uRF)
 library(survival)
 context("ranger_pred")
 

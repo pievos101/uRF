@@ -1,6 +1,6 @@
 ## Tests for using seeds
 
-library(ranger)
+library(uRF)
 context("ranger_seed")
 
 ## Initialize the random forests

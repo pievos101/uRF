@@ -239,9 +239,8 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   
   if (is.null(data)) {
     ## x/y interface
-    if (is.null(x) | is.null(y)) {
-      print("Clustering mode ...")
-      #stop("Error: Either data or x and y is required.")
+    if (is.null(x) || (is.null(y) && !clustering)) {
+      stop("Error: Either data or x and y is required.")
     }
   }  else {
     ## GenABEL GWA data
@@ -312,7 +311,11 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   }
   
   ## Treetype
-  if (is.factor(y) || is.logical(y)) {
+  if (is.null(y) && clustering) {
+    treetype <- 0
+    # There is no response against which to compute an OOB prediction error.
+    oob.error <- FALSE
+  } else if (is.factor(y) || is.logical(y)) {
     if (probability) {
       treetype <- 9
     } else {
@@ -320,10 +323,6 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     }
   } else if (is.numeric(y) && (is.null(ncol(y)) || ncol(y) == 1)) {
     
-    if(clustering){
-      treetype <- 0
-    }
-
     if (!is.null(classification) && classification && !probability) {
       treetype <- 1
     } else if (probability) {
@@ -334,9 +333,7 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   } else if (inherits(y, "Surv") || is.data.frame(y) || is.matrix(y)) {
     treetype <- 5
   } else {
-    treetype <- 0 # Clustering mode
-    print("Tree type in Clustering Mode")
-    #stop("Error: Unsupported type of dependent variable.")
+    stop("Error: Unsupported type of dependent variable.")
   }
   
   ## Quantile prediction only for regression
@@ -344,7 +341,6 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     stop("Error: Quantile prediction implemented only for regression outcomes.")
   }
 
-  print(treetype)
   independent.variable.names <- colnames(x)
   
   ## respect.unordered.factors
@@ -594,6 +590,9 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   } else if (importance == "impurity_corrected" || importance == "impurity_unbiased") {
     importance.mode <- 5
   } else if (importance == "permutation") {
+    if (treetype == 0) {
+      stop("Error: Permutation importance requires a response.")
+    }
     if (local.importance) {
       importance.mode <- 6
     } else if (scale.permutation.importance) {
@@ -871,7 +870,6 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
     }
   }
   
-  print("Before calling ranger C++")
   ## Call Ranger
   result <- rangerCpp(treetype, x, y.mat, independent.variable.names, mtry,
                       num.trees, verbose, seed, num.threads, write.forest, importance.mode,

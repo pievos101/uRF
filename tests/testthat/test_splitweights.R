@@ -1,6 +1,6 @@
 ## Tests for split select weights
 
-library(ranger)
+library(uRF)
 context("ranger_splitweights")
 
 ## Tests

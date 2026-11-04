@@ -1,4 +1,4 @@
-library(ranger)
+library(uRF)
 context("ranger_quantreg")
 
 rf.quant <- ranger(mpg ~ ., mtcars[1:26, ], quantreg = TRUE, 

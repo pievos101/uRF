@@ -1,6 +1,6 @@
 ## Tests for random forests for classification
 
-library(ranger)
+library(uRF)
 context("ranger_class")
 
 ## Initialize the random forest for classification
