@@ -69,3 +69,64 @@ test_that("invalid labels and uncovered leaves fail clearly", {
   forest$forest <- NULL
   expect_error(assign_clusters(forest, x, rep(1, 150)), "saved forest")
 })
+
+test_that("probability prediction averages full leaf proportions", {
+  x <- iris[, 1:4]
+  labels <- factor(rep(c("b", "c", "a"), length.out = nrow(x)),
+                   levels = c("c", "b", "a", "unused"))
+  forest <- ranger(x = x, clustering = TRUE, num.trees = 5,
+                   seed = 42, num.threads = 1, min.bucket = 5)
+  snapshot <- serialize(forest, NULL)
+  assigned <- assign_clusters(forest, x, labels, probability = TRUE)
+  expect_identical(serialize(forest, NULL), snapshot)
+  expect_identical(assigned$treetype, "Probability estimation")
+  expect_identical(assigned$forest$levels, c("c", "b", "a"))
+  nodes <- predict(forest, x, type = "terminalNodes")$predictions
+  per_tree <- array(0, dim = c(nrow(x), 3, forest$num.trees))
+  for (tree in seq_len(forest$num.trees)) {
+    for (id in unique(nodes[, tree])) {
+      members <- nodes[, tree] == id
+      proportions <- as.numeric(table(labels[members])[1:3]) / sum(members)
+      for (cluster in 1:3) per_tree[members, cluster, tree] <- proportions[cluster]
+    }
+  }
+  expected <- apply(per_tree, c(1, 2), mean)
+  colnames(expected) <- c("c", "b", "a")
+  probabilities <- predict(assigned, x)$predictions
+  expect_equal(probabilities, expected)
+  expect_equal(rowSums(probabilities), rep(1, nrow(x)))
+  expect_true(all(probabilities >= 0 & probabilities <= 1))
+  expect_equal(unname(predict(assigned, x, predict.all = TRUE)$predictions), per_tree)
+  expect_equal(predict(assigned$forest, x)$predictions, probabilities)
+  expect_equal(predict(assigned, x[1, , drop = FALSE])$predictions,
+               probabilities[1, , drop = FALSE])
+  expect_equal(predict(unserialize(serialize(assigned, NULL)), x)$predictions,
+               probabilities)
+  expect_equal(predict(assigned, x, type = "terminalNodes")$predictions, nodes)
+  predicted <- colnames(probabilities)[max.col(probabilities, ties.method = "first")]
+  expect_identical(predicted, colnames(expected)[max.col(expected, ties.method = "first")])
+  # Soft probabilities retain more information than majority votes.
+  hard <- assign_clusters(forest, x, labels)
+  votes <- predict(hard, x, predict.all = TRUE)$predictions
+  vote_fractions <- t(apply(votes, 1, function(v) tabulate(v, nbins = 3) / length(v)))
+  expect_true(any(abs(probabilities - vote_fractions) > 1e-8))
+})
+
+test_that("probability mode supports one tree, one subject and one cluster", {
+  x <- data.frame(a = c(1, 1), b = c(2, 2))
+  forest <- ranger(x = x, clustering = TRUE, num.trees = 1, min.node.size = 2)
+  assigned <- assign_clusters(forest, x, c("left", "right"), probability = TRUE)
+  p <- predict(assigned, x[1, , drop = FALSE])$predictions
+  expect_equal(p, matrix(c(0.5, 0.5), nrow = 1,
+                         dimnames = list(NULL, c("left", "right"))))
+  expect_identical(colnames(p)[max.col(p, ties.method = "first")], "left")
+  single <- assign_clusters(forest, x, c(10, 10), probability = TRUE)
+  expect_equal(predict(single, x[1, , drop = FALSE])$predictions,
+               matrix(1, 1, 1, dimnames = list(NULL, "10")))
+  for (bad in list(NA, 1, "TRUE", logical(), c(TRUE, FALSE))) {
+    expect_error(assign_clusters(forest, x, c(1, 2), probability = bad),
+                 "probability must be TRUE or FALSE")
+  }
+  expect_error(assign_clusters(forest, x[1, , drop = FALSE], NA, probability = TRUE),
+               "one non-missing label")
+})

@@ -69,6 +69,28 @@ approximate the original clustering, so check agreement on reference subjects:
 mean(predict(assignment_model, d, seed = 42)$predictions == res$clusters)
 ```
 
+To get cluster probabilities as well as a predicted label, retain the cluster
+proportions within each leaf with `probability = TRUE`:
+
+```r
+probability_model = uRF::assign_clusters(
+  res$model, d, res$clusters, probability = TRUE
+)
+probabilities = predict(probability_model, new_subject)$predictions
+probabilities  # One row per subject, one column per cluster; each row sums to 1
+
+# Select the cluster with the largest probability (first column wins a tie)
+predicted_cluster = colnames(probabilities)[
+  max.col(probabilities, ties.method = "first")
+]
+predicted_cluster
+```
+
+These probabilities average the reference cluster proportions in the reached
+leaves across trees, as in ranger probability forests. They are not simply
+majority-vote fractions and are not calibrated probabilities. The maximum-probability
+label can differ from the default majority-vote label.
+
 Every terminal node must contain at least one reference subject. For multiple
 views, `res$model` currently contains only the last view's forest; pass that
 view's predictor data. The assignment model then predicts from that view alone.
